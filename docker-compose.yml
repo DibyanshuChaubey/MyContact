@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: contact-manager-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=True
+      - JWT_SECRET_KEY=your-secret-key-change-this
+    volumes:
+      - ./backend:/app/backend
+    command: python backend/run.py
+    networks:
+      - contact-network
+
+networks:
+  contact-network:
+    driver: bridge

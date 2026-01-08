@@ -1,0 +1,14 @@
+*.pyc
+__pycache__/
+*.db
+*.log
+.env
+.vscode/
+.DS_Store
+node_modules/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
