@@ -10,7 +10,7 @@ contacts_bp = Blueprint('contacts', __name__, url_prefix='/api/contacts')
 @contacts_bp.route('', methods=['POST'])
 @jwt_required()
 def create_contact():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data = request.get_json() or {}
 
     if not data.get('name') or not data.get('email') or not data.get('phone'):
@@ -39,7 +39,7 @@ def create_contact():
 @contacts_bp.route('', methods=['GET'])
 @jwt_required()
 def get_contacts():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     search = (request.args.get('search') or '').strip()
@@ -75,7 +75,7 @@ def get_contacts():
 @contacts_bp.route('/<int:contact_id>', methods=['GET'])
 @jwt_required()
 def get_contact(contact_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     contact = Contact.query.filter_by(id=contact_id, user_id=user_id).first()
     if not contact:
         return error('Contact not found', 404)
@@ -85,7 +85,7 @@ def get_contact(contact_id):
 @contacts_bp.route('/<int:contact_id>', methods=['PUT'])
 @jwt_required()
 def update_contact(contact_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     contact = Contact.query.filter_by(id=contact_id, user_id=user_id).first()
     if not contact:
         return error('Contact not found', 404)
@@ -112,7 +112,7 @@ def update_contact(contact_id):
 @contacts_bp.route('/<int:contact_id>', methods=['DELETE'])
 @jwt_required()
 def delete_contact(contact_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     contact = Contact.query.filter_by(id=contact_id, user_id=user_id).first()
     if not contact:
         return error('Contact not found', 404)

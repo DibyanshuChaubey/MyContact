@@ -23,6 +23,9 @@ def register():
     if User.query.filter_by(email=data['email']).first():
         return error('Email already exists', 409)
     
+    if User.query.filter_by(username=data['username']).first():
+        return error('Username already taken', 409)
+    
     user = User(username=data['username'], email=data['email'])
     user.set_password(data['password'])
     
@@ -44,14 +47,15 @@ def login():
     if not user or not user.check_password(data['password']):
         return error('Invalid credentials', 401)
     
-    token = create_access_token(identity=user.id)
+    # Use string identity to avoid PyJWT "Subject must be a string" (422)
+    token = create_access_token(identity=str(user.id))
     return success({'user': user.to_dict(), 'access_token': token}, 'Login successful')
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 def get_me():
     """Get current user"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
     
     if not user:

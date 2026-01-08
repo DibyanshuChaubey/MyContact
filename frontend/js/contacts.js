@@ -25,11 +25,13 @@ let editingId = null;
 async function loadContacts() {
     const search = contactsUI.searchInput.value;
     const sort = contactsUI.sortSelect.value;
-    
+    contactsUI.list.innerHTML = '<p class="empty">Loading contacts…</p>';
     const res = await contactsAPI.getAll(currentPage, search, sort);
-    
-    if (!res.success) return;
-    
+    if (!res.success) {
+        contactsUI.list.innerHTML = '<p class="empty">Could not load contacts.</p>';
+        window.showToast(res.message || 'Failed to load contacts', 'error');
+        return;
+    }
     displayContacts(res.data.contacts);
     updatePagination(res.data.pagination);
 }
@@ -51,7 +53,7 @@ function displayContacts(contacts) {
             ${c.address ? `<div class="contact-info"><strong>Address:</strong> ${c.address}</div>` : ''}
             <div class="contact-actions">
                 <button class="btn-small btn-edit" onclick="editContact(${c.id})">Edit</button>
-                <button class="btn-small btn-delete" onclick="deleteContact(${c.id})">Delete</button>
+                <button class="btn-small btn-delete" onclick="deleteContact(${c.id}, this)">Delete</button>
             </div>
         </div>
     `).join('');
@@ -81,24 +83,29 @@ contactsUI.form.addEventListener('submit', async (e) => {
     };
     
     let res;
-    if (editingId) {
-        res = await contactsAPI.update(editingId, data);
-        editingId = null;
-        contactsUI.submitBtn.textContent = 'Add Contact';
-        contactsUI.cancelBtn.classList.add('hidden');
-    } else {
-        res = await contactsAPI.create(data.name, data.email, data.phone, data.address);
+    try {
+        window.setLoading(contactsUI.submitBtn, true, editingId ? 'Updating…' : 'Adding…');
+        if (editingId) {
+            res = await contactsAPI.update(editingId, data);
+            editingId = null;
+            contactsUI.submitBtn.textContent = 'Add Contact';
+            contactsUI.cancelBtn.classList.add('hidden');
+        } else {
+            res = await contactsAPI.create(data.name, data.email, data.phone, data.address);
+        }
+        if (!res.success) {
+            contactsUI.formError.textContent = res.message;
+            window.showToast(res.message || 'Failed to save contact', 'error');
+            return;
+        }
+        contactsUI.formError.textContent = '';
+        contactsUI.form.reset();
+        currentPage = 1;
+        window.showToast('Contact saved', 'success');
+        loadContacts();
+    } finally {
+        window.setLoading(contactsUI.submitBtn, false);
     }
-    
-    if (!res.success) {
-        contactsUI.formError.textContent = res.message;
-        return;
-    }
-    
-    contactsUI.formError.textContent = '';
-    contactsUI.form.reset();
-    currentPage = 1;
-    loadContacts();
 });
 
 // Edit contact
@@ -126,12 +133,19 @@ contactsUI.cancelBtn.addEventListener('click', () => {
 });
 
 // Delete contact
-async function deleteContact(id) {
+async function deleteContact(id, btn) {
     if (!confirm('Delete this contact?')) return;
-    
-    const res = await contactsAPI.delete(id);
-    if (res.success) {
-        loadContacts();
+    try {
+        window.setLoading(btn, true, 'Deleting…');
+        const res = await contactsAPI.delete(id);
+        if (res.success) {
+            window.showToast('Contact deleted', 'info');
+            loadContacts();
+        } else {
+            window.showToast(res.message || 'Delete failed', 'error');
+        }
+    } finally {
+        window.setLoading(btn, false);
     }
 }
 

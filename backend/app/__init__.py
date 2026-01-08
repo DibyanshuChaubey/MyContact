@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -8,7 +9,9 @@ jwt = JWTManager()
 
 def create_app():
     """Create Flask application"""
-    app = Flask(__name__)
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    frontend_dir = os.path.join(base_dir, 'frontend')
+    app = Flask(__name__, static_folder=frontend_dir, static_url_path='')
     
     # Config
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///contacts.db'
@@ -20,8 +23,9 @@ def create_app():
     jwt.init_app(app)
     CORS(app)
     
-    # Create tables
+    # Create tables (ensure models are imported before create_all)
     with app.app_context():
+        from app import models  # noqa: F401
         db.create_all()
     
     # Register blueprints
@@ -35,5 +39,10 @@ def create_app():
     @app.route('/api/health', methods=['GET'])
     def health():
         return {'status': 'ok'}, 200
+
+    # Serve frontend at root
+    @app.route('/', methods=['GET'])
+    def root():
+        return app.send_static_file('index.html')
     
     return app
